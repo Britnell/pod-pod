@@ -21,7 +21,8 @@ export const useAutoSync = (
 
     async function checkConnected() {
       try {
-        await readDir(devicePath);
+        const x = await readDir(devicePath);
+        console.log({ x });
         if (!cancelled) setpodConnected(true);
       } catch {
         if (!cancelled) setpodConnected(false);
@@ -35,6 +36,11 @@ export const useAutoSync = (
         unwatchFn = await watchImmediate("/Volumes", () => {
           checkConnected();
         });
+        // If cleanup already ran before watchImmediate resolved, unwatch immediately
+        if (cancelled) {
+          unwatchFn();
+          unwatchFn = null;
+        }
       } catch (e) {
         console.error("Failed to watch /Volumes:", e);
       }
@@ -48,12 +54,14 @@ export const useAutoSync = (
     };
   }, [settings.autoSync, settings.devicePath]);
 
+  console.log({ podConnected });
+
   React.useEffect(() => {
     if (!settings.autoSync) return;
     if (!settings.devicePath) return;
     if (!podConnected) return;
 
-    // console.log("sync to ", settings.devicePath);
+    console.log("sync to ", settings.devicePath);
     //
-  }, [podConnected]);
+  }, [podConnected, settings.autoSync, settings.devicePath]);
 };
