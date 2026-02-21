@@ -34,14 +34,14 @@ function PodcastDetail() {
 
       return readDir(`Podcasts/${folder}`, {
         baseDir: BaseDirectory.Audio,
-      }).then((res) => {
-        return res.map((res) => res.name.split(".")[0]);
-      }).catch(() => [] as string[]);
+      })
+        .then((res) => {
+          return res.map((f) => f.name);
+        })
+        .catch(() => [] as string[]);
     },
     enabled: !!podcast?.collectionName,
   });
-
-  console.log(savedFiles);
 
   const download = (
     podcast: { collectionName?: string | null },
@@ -79,7 +79,7 @@ function PodcastDetail() {
           const h = c ? a : 0;
           const m = c ? b : a;
 
-          const downloaded = savedFiles?.includes(ep.guid);
+          const downloaded = savedFiles?.includes(episodeFilename(ep));
           const isDownloading = downloading.includes(ep.guid!);
           return (
             <li
@@ -99,7 +99,9 @@ function PodcastDetail() {
                 {downloaded ? (
                   <button className="text-xs px-1 bg-orange-200">saved</button>
                 ) : isDownloading ? (
-                  <span className="text-xs px-1 text-slate-400">downloading…</span>
+                  <span className="text-xs px-1 text-slate-400">
+                    downloading…
+                  </span>
                 ) : (
                   <button
                     onClick={() => download(podcast, ep)}
@@ -126,15 +128,20 @@ interface Episode {
   audioUrl: string | null | undefined;
 }
 
+function episodeFilename(episode: Episode): string {
+  const ext = episode.audioUrl?.split(".").pop()?.split("?")[0] ?? "mp3";
+  const safe = episode.title?.replace(/[/\\:*?"<>|]/g, "_") ?? "episode";
+  return `${safe}.${ext}`;
+}
+
 async function downloadEpisode(
   podcast: { collectionName?: string | null },
   episode: Episode,
 ) {
-  const { audioUrl, guid } = episode;
+  const { audioUrl } = episode;
   if (!audioUrl) return;
   const folder = `Podcasts/${podcast.collectionName!}`;
-  const ext = audioUrl.split(".").pop()?.split("?")[0] ?? "mp3";
-  const filename = `${folder}/${guid}.${ext}`;
+  const filename = `${folder}/${episodeFilename(episode)}`;
   const response = await tauriFetch(audioUrl);
   const bytes = new Uint8Array(await response.arrayBuffer());
   await mkdir(folder, { baseDir: BaseDirectory.Audio, recursive: true });

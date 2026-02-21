@@ -1,6 +1,7 @@
 import React from "react";
-import { readDir } from "@tauri-apps/plugin-fs";
-import { watchImmediate } from "@tauri-apps/plugin-fs";
+import { readDir, watchImmediate } from "@tauri-apps/plugin-fs";
+import { audioDir } from "@tauri-apps/api/path";
+import { invoke } from "@tauri-apps/api/core";
 import { Settings } from "./useStore";
 
 export const useAutoSync = (
@@ -9,9 +10,10 @@ export const useAutoSync = (
   const [settings] = settingstate;
 
   const [podConnected, setpodConnected] = React.useState(false);
+  const [syncing, setSyncing] = React.useState(false);
 
+  // Watch /Volumes to detect iPod connect/disconnect
   React.useEffect(() => {
-    // detect pod connected
     if (!settings.autoSync) return;
     if (!settings.devicePath) return;
 
@@ -21,32 +23,27 @@ export const useAutoSync = (
 
     async function checkConnected() {
       try {
-        const x = await readDir(devicePath);
-        console.log({ x });
+        await readDir(devicePath);
         if (!cancelled) setpodConnected(true);
       } catch {
         if (!cancelled) setpodConnected(false);
       }
     }
 
-    async function startWatching() {
+    async function start() {
       await checkConnected();
       if (cancelled) return;
       try {
         unwatchFn = await watchImmediate("/Volumes", () => {
-          checkConnected();
+          if (!cancelled) checkConnected();
         });
-        // If cleanup already ran before watchImmediate resolved, unwatch immediately
-        if (cancelled) {
-          unwatchFn();
-          unwatchFn = null;
-        }
+        if (cancelled) unwatchFn();
       } catch (e) {
         console.error("Failed to watch /Volumes:", e);
       }
     }
 
-    startWatching();
+    start();
 
     return () => {
       cancelled = true;
@@ -54,14 +51,57 @@ export const useAutoSync = (
     };
   }, [settings.autoSync, settings.devicePath]);
 
-  console.log({ podConnected });
-
+  // When pod is connected, sync immediately then watch podcast folder for new downloads
   React.useEffect(() => {
     if (!settings.autoSync) return;
     if (!settings.devicePath) return;
     if (!podConnected) return;
 
-    console.log("sync to ", settings.devicePath);
-    //
+    const devicePath = settings.devicePath;
+    let unwatchFn: (() => void) | null = null;
+    let cancelled = false;
+
+    async function runSync() {
+      const source = `${await audioDir()}/Podcasts`;
+      setSyncing(true);
+      try {
+        await invoke("sync_to_device", {
+          source,
+          destination: devicePath,
+          delete: false,
+        });
+      } catch (e) {
+        console.error("Auto sync failed:", e);
+      } finally {
+        setSyncing(false);
+      }
+    }
+
+    start();
+
+    async function start() {
+      if (cancelled) return;
+      await runSync();
+      const podcastDir = `${await audioDir()}/Podcasts`;
+      try {
+        unwatchFn = await watchImmediate(
+          podcastDir,
+          () => {
+            if (!cancelled) runSync();
+          },
+          { recursive: true },
+        );
+        if (cancelled) unwatchFn();
+      } catch (e) {
+        console.error("Failed to watch podcast folder:", e);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      unwatchFn?.();
+    };
   }, [podConnected, settings.autoSync, settings.devicePath]);
+
+  return { syncing };
 };

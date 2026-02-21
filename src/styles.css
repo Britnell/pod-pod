@@ -1,7 +1,29 @@
 @import "tailwindcss";
 
-button {
-  &:not(:disabled) {
-    cursor: pointer;
+@theme {
+  --font-mono: "Nimbus Mono PS", "Courier New", monospace;
+}
+
+body {
+  font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  .heading {
+    font-family:
+      Didot, "Bodoni MT", "Noto Serif Display", "URW Palladio L", P052, Sylfaen,
+      serif;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  button {
+    &:not(:disabled) {
+      cursor: pointer;
+    }
   }
 }
