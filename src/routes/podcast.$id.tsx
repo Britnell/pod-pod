@@ -1,33 +1,156 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useStore } from "../useStore";
+import { useQuery } from "@tanstack/react-query";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import {
+  writeFile,
+  BaseDirectory,
+  mkdir,
+  readDir,
+} from "@tauri-apps/plugin-fs";
+import { useStoreContext } from "../useStore";
 
 export const Route = createFileRoute("/podcast/$id")({
   component: PodcastDetail,
-  loader: async ({ params }) => {
-    console.log(params);
-    return [];
-  },
 });
 
 function PodcastDetail() {
   const { id } = Route.useParams();
-  const { podcaststate } = useStore();
+  const { podcaststate } = useStoreContext();
   const [podcasts] = podcaststate;
-
   const podcast = podcasts.find((p) => p.collectionId === Number(id));
+
+  const { data: episodes = [], isLoading } = useQuery({
+    queryKey: ["episodes", id],
+    queryFn: () => fetchEpisodes(podcast?.feedUrl!),
+    enabled: !!podcast,
+  });
+
+  const { data: savedFiles } = useQuery({
+    queryKey: ["savedFiles", podcast?.collectionName],
+    queryFn: () => {
+      const folder = podcast?.collectionName ?? "";
+
+      return readDir(folder, {
+        baseDir: BaseDirectory.Audio,
+      }).then((res) => {
+        return res.map((res) => res.name.split(".")[0]);
+      });
+      // .catch((err) => {
+      //   console.error("readDir error:", err);
+      //   return [];
+      // });
+    },
+    enabled: !!podcast?.collectionName,
+  });
+
+  console.log(savedFiles);
+
+  const download = (
+    podcast: { collectionName?: string | null },
+    ep: Episode,
+  ) => {
+    downloadEpisode(podcast, ep);
+  };
 
   if (!podcast) {
     return <div>Podcast not found</div>;
   }
+  if (isLoading) {
+    return <p>Loading...</p>;
+  }
 
   return (
-    <div>
-      <img
-        src={podcast.artworkUrl600 ?? podcast.artworkUrl100}
-        alt={podcast.collectionName}
-        className="w-20"
-      />
-      <h1>{podcast.collectionName}</h1>
+    <div className="px-4">
+      <div className="grid grid-cols-[auto_1fr] gap-2">
+        <img
+          src={podcast.artworkUrl600 ?? podcast.artworkUrl100}
+          alt={podcast.collectionName}
+          className="w-20 float-left"
+        />
+        <h1 className="text-3xl font-bold">{podcast.collectionName}</h1>
+      </div>
+      <ul>
+        {episodes.slice(0, 10).map((ep) => {
+          const [a, b, c] =
+            ep.duration?.split(":").map((str) => parseInt(str)) ?? [];
+          const h = c ? a : 0;
+          const m = c ? b : a;
+
+          const downloaded = savedFiles?.includes(ep.guid);
+          return (
+            <li
+              key={ep.guid}
+              className="my-4 w-full relative p-2 border border-slate-200 grid grid-cols-[1fr_auto] "
+            >
+              <div className="x">
+                <h2 className="text-lg font-medium">{ep.title}</h2>
+                <p className="text-sm text-slate-500"> {ep.pubDate}</p>
+                <p className=" bg-slate-200"> </p>
+                <p className="max-w-[60vw] text-sm text-ellipsis text-nowrap  overflow-hidden w-full flex gap-2">
+                  {!!h && <span className="">{h} h</span>}
+                  {!!m && <span className="">{m} m</span>}
+                </p>
+              </div>
+              <div className="x">
+                {downloaded ? (
+                  <button className="text-xs px-1 bg-orange-200">saved</button>
+                ) : (
+                  <button
+                    onClick={() => download(podcast, ep)}
+                    className="text-xs px-1 bg-blue-200"
+                  >
+                    Download
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
+}
+
+interface Episode {
+  title: string | null | undefined;
+  guid: string | null | undefined;
+  pubDate: string | null | undefined;
+  duration: string | null | undefined;
+  description: string | null | undefined;
+  audioUrl: string | null | undefined;
+}
+
+async function downloadEpisode(
+  podcast: { collectionName?: string | null },
+  episode: Episode,
+) {
+  const { audioUrl, guid } = episode;
+  if (!audioUrl) return;
+  const folder = podcast.collectionName!;
+  const ext = audioUrl.split(".").pop()?.split("?")[0] ?? "mp3";
+  const filename = `${folder}/${guid}.${ext}`;
+  const response = await tauriFetch(audioUrl);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  await mkdir(folder, { baseDir: BaseDirectory.Audio, recursive: true });
+  await writeFile(filename, bytes, { baseDir: BaseDirectory.Audio });
+}
+
+async function fetchEpisodes(feedUrl: string): Promise<Episode[]> {
+  const res = await tauriFetch(feedUrl).catch((err) => {
+    return { error: err };
+  });
+  const xml = await res.text();
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  return Array.from(doc.querySelectorAll("item")).map((item) => {
+    const pubDate = item.querySelector("pubDate")?.textContent;
+    const duration =
+      item.getElementsByTagName("itunes:duration")[0]?.textContent;
+    const description =
+      item.getElementsByTagName("itunes:summary")[0]?.textContent;
+    const guid = item.querySelector("guid")?.textContent;
+    const title = item.querySelector("title")?.textContent;
+    const audioUrl =
+      item.querySelector("enclosure")?.getAttribute("url") ?? undefined;
+    return { title, guid, pubDate, duration, description, audioUrl };
+  });
 }
