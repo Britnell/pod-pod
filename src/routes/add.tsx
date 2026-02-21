@@ -1,7 +1,11 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useStore } from "./useStore";
-import "./App.css";
+import { useStore } from "../useStore";
+
+export const Route = createFileRoute("/add")({
+	component: AddPodcast,
+});
 
 interface PodcastResult {
 	wrapperType: string;
@@ -28,37 +32,32 @@ interface iTunesSearchResponse {
 	results: PodcastResult[];
 }
 
-function App() {
+function AddPodcast() {
+	const navigate = useNavigate();
 	const { podcaststate } = useStore();
 	const [podcasts, setPodcasts] = podcaststate;
-
 	const [searchTerm, setSearchTerm] = useState("");
 
-	const {
-		data: searchResults,
-		isLoading,
-		error,
-	} = useQuery<iTunesSearchResponse | null>({
+	const { data: searchResults, isLoading, error } = useQuery<iTunesSearchResponse | null>({
 		queryKey: ["podcastSearch", searchTerm],
 		queryFn: async () => {
 			if (!searchTerm.trim()) return null;
 			const response = await fetch(
 				`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&media=podcast&limit=25`,
-			);
+			)
 			const json: iTunesSearchResponse = await response.json();
 			return json;
 		},
 		enabled: !!searchTerm.trim(),
-	});
-
-	console.log(searchResults?.results);
+	})
 
 	const handleSubmit = (e: any) => {
 		e.preventDefault();
-	};
+	}
 
 	return (
-		<main class="container">
+		<div>
+			<button onClick={() => navigate({ to: "/" })}>← Back</button>
 			<h1>Podcast Search</h1>
 			<form onSubmit={handleSubmit}>
 				<input
@@ -95,12 +94,8 @@ function App() {
 									style={{ borderRadius: "8px", flexShrink: 0 }}
 								/>
 							)}
-							<div>
-								<a
-									href={podcast.collectionViewUrl}
-									target="_blank"
-									rel="noreferrer"
-								>
+							<div style={{ flex: 1 }}>
+								<a href={podcast.collectionViewUrl} target="_blank" rel="noreferrer">
 									{podcast.collectionName}
 								</a>
 								{podcast.artistName && (
@@ -109,12 +104,19 @@ function App() {
 									</div>
 								)}
 							</div>
+							{podcasts.some((p) => p.collectionId === podcast.collectionId) ? (
+								<button onClick={() => setPodcasts((prev) => prev.filter((p) => p.collectionId !== podcast.collectionId))}>
+									Remove
+								</button>
+							) : (
+								<button onClick={() => setPodcasts((prev) => [...prev, podcast])}>
+									Add
+								</button>
+							)}
 						</li>
 					))}
 				</ul>
 			)}
-		</main>
-	);
+		</div>
+	)
 }
-
-export default App;

@@ -10,16 +10,20 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.2.0",
     "@tanstack/react-query": "^5",
+    "@tanstack/react-router": "^1.161.3",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-store": "~2",
-    "preact": "^10.25.1"
+    "preact": "^10.25.1",
+    "tailwindcss": "^4.2.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.9.3",
+    "@tanstack/router-plugin": "^1.161.3",
+    "@tauri-apps/cli": "^2",
     "typescript": "~5.6.2",
-    "vite": "^6.0.3",
-    "@tauri-apps/cli": "^2"
+    "vite": "^6.0.3"
   }
 }
