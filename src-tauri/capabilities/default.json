@@ -11,7 +11,14 @@
     "store:default",
     {
       "identifier": "http:allow-fetch",
-      "allow": [{ "url": "http://**" }, { "url": "https://**" }]
+      "allow": [
+        {
+          "url": "http://**"
+        },
+        {
+          "url": "https://**"
+        }
+      ]
     },
     "http:allow-fetch-send",
     "http:allow-fetch-cancel-body",
@@ -19,15 +26,48 @@
     "fs:default",
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "$APPLOCALDATA/**" }, { "path": "$AUDIO/**" }]
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "$APPLOCALDATA/**" }, { "path": "$AUDIO/**" }]
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "$AUDIO/**" }]
-    }
+      "allow": [
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "/Volumes/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-watch",
+      "allow": [
+        {
+          "path": "/Volumes"
+        },
+        {
+          "path": "/Volumes/**"
+        }
+      ]
+    },
+    "dialog:default"
   ]
 }

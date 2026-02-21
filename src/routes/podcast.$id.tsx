@@ -1,3 +1,4 @@
+import React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
@@ -18,6 +19,7 @@ function PodcastDetail() {
   const { podcaststate } = useStoreContext();
   const [podcasts] = podcaststate;
   const podcast = podcasts.find((p) => p.collectionId === Number(id));
+  const [downloading, setDownloading] = React.useState<string[]>([]);
 
   const { data: episodes = [], isLoading } = useQuery({
     queryKey: ["episodes", id],
@@ -25,20 +27,16 @@ function PodcastDetail() {
     enabled: !!podcast,
   });
 
-  const { data: savedFiles } = useQuery({
+  const { data: savedFiles, refetch: refetchSavedFiles } = useQuery({
     queryKey: ["savedFiles", podcast?.collectionName],
     queryFn: () => {
       const folder = podcast?.collectionName ?? "";
 
-      return readDir(folder, {
+      return readDir(`Podcasts/${folder}`, {
         baseDir: BaseDirectory.Audio,
       }).then((res) => {
         return res.map((res) => res.name.split(".")[0]);
-      });
-      // .catch((err) => {
-      //   console.error("readDir error:", err);
-      //   return [];
-      // });
+      }).catch(() => [] as string[]);
     },
     enabled: !!podcast?.collectionName,
   });
@@ -49,7 +47,12 @@ function PodcastDetail() {
     podcast: { collectionName?: string | null },
     ep: Episode,
   ) => {
-    downloadEpisode(podcast, ep);
+    const guid = ep.guid!;
+    setDownloading((prev) => [...prev, guid]);
+    downloadEpisode(podcast, ep).finally(() => {
+      setDownloading((prev) => prev.filter((id) => id !== guid));
+      refetchSavedFiles();
+    });
   };
 
   if (!podcast) {
@@ -77,6 +80,7 @@ function PodcastDetail() {
           const m = c ? b : a;
 
           const downloaded = savedFiles?.includes(ep.guid);
+          const isDownloading = downloading.includes(ep.guid!);
           return (
             <li
               key={ep.guid}
@@ -94,6 +98,8 @@ function PodcastDetail() {
               <div className="x">
                 {downloaded ? (
                   <button className="text-xs px-1 bg-orange-200">saved</button>
+                ) : isDownloading ? (
+                  <span className="text-xs px-1 text-slate-400">downloading…</span>
                 ) : (
                   <button
                     onClick={() => download(podcast, ep)}
@@ -126,7 +132,7 @@ async function downloadEpisode(
 ) {
   const { audioUrl, guid } = episode;
   if (!audioUrl) return;
-  const folder = podcast.collectionName!;
+  const folder = `Podcasts/${podcast.collectionName!}`;
   const ext = audioUrl.split(".").pop()?.split("?")[0] ?? "mp3";
   const filename = `${folder}/${guid}.${ext}`;
   const response = await tauriFetch(audioUrl);

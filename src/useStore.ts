@@ -11,30 +11,48 @@ export interface Podcast {
   artworkUrl600?: string;
 }
 
+export interface Settings {
+  devicePath: string | null;
+  autoSync: boolean;
+}
+
+const defaultSettings: Settings = {
+  devicePath: null,
+  autoSync: false,
+};
+
 interface StoreState {
   podcaststate: [Podcast[], (p: Podcast[]) => void];
+  settingstate: [Settings, (s: Settings) => void];
 }
 
 export const StoreContext = createContext<StoreState | null>(null);
 
 export function useStoreContext(): StoreState {
   const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error("useStoreContext must be used within StoreContext.Provider");
+  if (!ctx)
+    throw new Error(
+      "useStoreContext must be used within StoreContext.Provider",
+    );
   return ctx;
 }
+
 
 export function useStore(): StoreState {
   const storeRef = useRef<Store | null>(null);
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
   const loadedRef = useRef(false);
 
   useEffect(() => {
     (async () => {
       try {
         const s = await load("store.json");
-        const saved = await s.get<Podcast[]>("podcasts");
+        const savedPodcasts = await s.get<Podcast[]>("podcasts");
+        const savedSettings = await s.get<Settings>("settings");
         storeRef.current = s;
-        if (saved) setPodcasts(saved);
+        if (savedPodcasts) setPodcasts(savedPodcasts);
+        if (savedSettings) setSettings(savedSettings);
         loadedRef.current = true;
       } catch (error) {
         console.error("Failed to initialize store:", error);
@@ -48,5 +66,14 @@ export function useStore(): StoreState {
     storeRef.current.save();
   }, [podcasts]);
 
-  return { podcaststate: [podcasts, setPodcasts] };
+  useEffect(() => {
+    if (!storeRef.current || !loadedRef.current) return;
+    storeRef.current.set("settings", settings);
+    storeRef.current.save();
+  }, [settings]);
+
+  return {
+    podcaststate: [podcasts, setPodcasts],
+    settingstate: [settings, setSettings],
+  };
 }
