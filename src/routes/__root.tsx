@@ -37,7 +37,7 @@ function RootLayout() {
         </div>
       </header>
       <div className=" max-w-5xl mx-auto grid grid-cols-[auto_1fr]">
-        <aside className="w-[250px] border-r border-slate-600 space-y-2 px-2">
+        <aside className="w-[250px] min-h-[calc(100vh-2rem)] border-r border-slate-600 space-y-2 px-2">
           <Link
             to="/add"
             className=" bg-slate-100 hover:bg-slate-200 px-1 rounded mt-2 h-8 flex items-center gap-2"

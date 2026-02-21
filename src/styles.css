@@ -21,6 +21,9 @@ body {
     font-weight: 800;
     line-height: 1.4;
   }
+  p {
+    @apply text-slate-700;
+  }
   button {
     &:not(:disabled) {
       cursor: pointer;

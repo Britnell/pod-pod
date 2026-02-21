@@ -61,22 +61,28 @@ function Home() {
         <main className="">
           <h3 className="mt-6 font-semibold text-lg">Sync destination</h3>
           <div className="flex gap-2 mt-2">
-            <span className="bg-slate-200 px-1 rounded font-mono">
-              {settings.devicePath ?? "SET PATH"}
-            </span>
             <button
               onClick={pickDestination}
-              className="ml-auto px-1 rounded bg-slate-700 text-white"
+              className=" px-1 rounded bg-slate-700 text-white"
             >
               {settings.devicePath
                 ? "Change sync folder"
                 : "Select sync folder"}
             </button>
+            <span className="bg-slate-200 text-slate-700 px-1 rounded font-mono">
+              {settings.devicePath ?? "SET PATH"}
+            </span>
           </div>
 
           <h3 className="mt-6 font-semibold text-lg">Auto-sync</h3>
-          <div className="flex items-center gap-2 mt-2">
-            <p>Automatically sync podcasts onto your device when connected</p>
+          <p>Automatically sync podcasts onto your device when connected</p>
+          <div className="x p-2">
+            <p className="mb-1">
+              autosync is:
+              <span className=" font-bold ml-2">
+                {settings.autoSync ? "On" : "Off"}
+              </span>
+            </p>
             <button
               onClick={() =>
                 setSettings({ ...settings, autoSync: !settings.autoSync })
@@ -86,6 +92,7 @@ function Home() {
               {settings.autoSync ? "Disable auto sync" : "Enable auto sync"}
             </button>
           </div>
+          <div className=" gap-2 mt-2"></div>
           <h3 className="mt-6 font-semibold text-lg">Manual sync</h3>
           <div className="">
             {syncing ? (
