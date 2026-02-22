@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { load } from "@tauri-apps/plugin-store";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
@@ -57,16 +58,6 @@ async function fetchEpisodes(feedUrl: string): Promise<Episode[]> {
   });
 }
 
-async function loadEpisodes(feedUrl: string, key: string): Promise<Episode[]> {
-  const store = await load("episodes.json");
-  const raw = await store.get<string>(key);
-  if (raw) {
-    const cached: CachedEpisodes = JSON.parse(raw);
-    return cached.episodes;
-  }
-  return doFetchAndCache(feedUrl, key);
-}
-
 async function doFetchAndCache(
   feedUrl: string,
   key: string,
@@ -79,39 +70,39 @@ async function doFetchAndCache(
   return fetched;
 }
 
+async function loadFromCache(key: string): Promise<Episode[] | null> {
+  const store = await load("episodes.json");
+  const raw = await store.get<string>(key);
+  if (!raw) return null;
+  const cached: CachedEpisodes = JSON.parse(raw);
+  return cached.episodes;
+}
+
 export function usePodcastEpisodes(podcast: Podcast | undefined) {
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const key = podcast ? `episodes:${podcast.collectionName}` : null;
 
+  const queryClient = useQueryClient();
+
+  const { data: episodes, isLoading } = useQuery({
+    queryKey: ["episodes", podcast?.collectionName],
+    queryFn: () => loadFromCache(key!),
+    enabled: !!key,
+  });
+
+  // Cache miss: fetch from network and populate cache + query
   useEffect(() => {
-    load();
+    if (!key || !podcast?.feedUrl || episodes !== null || isLoading) return;
 
-    async function load() {
-      if (!podcast?.feedUrl) return;
-      const feedUrl = podcast.feedUrl;
-      const key = `episodes:${podcast.collectionName}`;
+    doFetchAndCache(podcast.feedUrl, key).then((fetched) => {
+      queryClient.setQueryData(["episodes", key], fetched);
+    });
+  }, [key, podcast?.feedUrl, episodes, isLoading]);
 
-      setIsLoading(true);
-      try {
-        const eps = await loadEpisodes(feedUrl, key);
-        setEpisodes(eps);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  }, [podcast?.collectionName]);
-
-  async function refresh() {
-    if (!podcast?.feedUrl) return;
-    const feedUrl = podcast.feedUrl;
-    const key = `episodes:${podcast.collectionName}`;
-    setIsLoading(true);
-    try {
-      setEpisodes(await doFetchAndCache(feedUrl, key));
-    } finally {
-      setIsLoading(false);
-    }
+  async function refetch() {
+    if (!podcast?.feedUrl || !key) return;
+    const fetched = await doFetchAndCache(podcast.feedUrl, key);
+    queryClient.setQueryData(["episodes", key], fetched);
   }
 
-  return { episodes, isLoading, refresh };
+  return { episodes: episodes ?? [], isLoading, refetch };
 }

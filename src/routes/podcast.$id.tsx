@@ -28,7 +28,7 @@ function PodcastDetail() {
   const [podcasts] = podcaststate;
   const podcast = podcasts.find((p) => p.collectionId === Number(id));
 
-  const { episodes, isLoading } = usePodcastEpisodes(podcast);
+  const { episodes, isLoading, refetch } = usePodcastEpisodes(podcast);
 
   const { data: savedFiles, refetch: refetchSavedFiles } = useQuery({
     queryKey: ["savedFiles", podcast?.collectionName],
@@ -50,7 +50,11 @@ function PodcastDetail() {
     podcast: { collectionName?: string | null },
     ep: Episode,
   ) => {
-    const entry: DownloadingEpisode = { guid: ep.guid!, title: ep.title, img: ep.img };
+    const entry: DownloadingEpisode = {
+      guid: ep.guid!,
+      title: ep.title,
+      img: ep.img,
+    };
     setDownloading((prev) => [...prev, entry]);
     downloadEpisode(podcast, ep).finally(() => {
       setDownloading((prev) => prev.filter((e) => e.guid !== entry.guid));
@@ -78,6 +82,7 @@ function PodcastDetail() {
           <h1 className="text-3xl font-bold">{podcast.collectionName}</h1>
           <p className=" text-slate-500">{podcast.trackCount} episodes</p>
         </div>
+        <button onClick={() => refetch()}>update</button>
       </div>
       <ul>
         {episodes.slice(0, results).map((ep) => {
