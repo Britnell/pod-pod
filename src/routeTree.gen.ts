@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SyncRouteImport } from './routes/sync'
-import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as DownloadRouteImport } from './routes/download'
 import { Route as AddRouteImport } from './routes/add'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PodcastIdRouteImport } from './routes/podcast.$id'
@@ -20,9 +20,9 @@ const SyncRoute = SyncRouteImport.update({
   path: '/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const DownloadRoute = DownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AddRoute = AddRouteImport.update({
@@ -44,14 +44,14 @@ const PodcastIdRoute = PodcastIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
-  '/settings': typeof SettingsRoute
+  '/download': typeof DownloadRoute
   '/sync': typeof SyncRoute
   '/podcast/$id': typeof PodcastIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add': typeof AddRoute
-  '/settings': typeof SettingsRoute
+  '/download': typeof DownloadRoute
   '/sync': typeof SyncRoute
   '/podcast/$id': typeof PodcastIdRoute
 }
@@ -59,22 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/add': typeof AddRoute
-  '/settings': typeof SettingsRoute
+  '/download': typeof DownloadRoute
   '/sync': typeof SyncRoute
   '/podcast/$id': typeof PodcastIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/add' | '/settings' | '/sync' | '/podcast/$id'
+  fullPaths: '/' | '/add' | '/download' | '/sync' | '/podcast/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/add' | '/settings' | '/sync' | '/podcast/$id'
-  id: '__root__' | '/' | '/add' | '/settings' | '/sync' | '/podcast/$id'
+  to: '/' | '/add' | '/download' | '/sync' | '/podcast/$id'
+  id: '__root__' | '/' | '/add' | '/download' | '/sync' | '/podcast/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddRoute: typeof AddRoute
-  SettingsRoute: typeof SettingsRoute
+  DownloadRoute: typeof DownloadRoute
   SyncRoute: typeof SyncRoute
   PodcastIdRoute: typeof PodcastIdRoute
 }
@@ -88,11 +88,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SyncRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/add': {
@@ -122,7 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddRoute: AddRoute,
-  SettingsRoute: SettingsRoute,
+  DownloadRoute: DownloadRoute,
   SyncRoute: SyncRoute,
   PodcastIdRoute: PodcastIdRoute,
 }

@@ -1,4 +1,5 @@
 import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
+import { useRef } from "react";
 import { useStore, StoreContext } from "../useStore";
 import { useAutoSync } from "../autosync";
 import { useDownloader } from "../useDownloader";
@@ -14,6 +15,7 @@ function RootLayout() {
 
   const { syncing } = useAutoSync(settingstate);
   const { downloading } = useDownloader();
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   return (
     <StoreContext.Provider value={store}>
@@ -35,21 +37,45 @@ function RootLayout() {
             Sync
           </Link>
           <Link
-            to="/settings"
+            to="/download"
             className="font-bold underline-offset-2 hover:underline rounded-sm px-1 mr-auto"
           >
-            Settings
+            Download
           </Link>
           {syncing && (
             <span className="ml-auto bg-orange-400 px-1 rounded font-medium">
               syncing…
             </span>
           )}
-          <span className={!!downloading?.length ? "" : " invisible"}>
-            [{downloading?.length}]
-          </span>
+          <button
+            className={` border rounded w-8 pb-0.5 text-sm ${!!downloading?.length ? "" : " xinvisible"}`}
+            onClick={() => dialogRef.current?.showModal()}
+          >
+            &darr;
+          </button>
         </nav>
       </header>
+
+      <dialog
+        ref={dialogRef}
+        className="fixed inset-0 m-0 p-0 w-full h-full max-w-none max-h-none bg-transparent backdrop:bg-black/20"
+        onClick={(e) =>
+          e.target === e.currentTarget && dialogRef.current?.close()
+        }
+      >
+        <div className="header-menu absolute top-14 right-[calc(max((100vw-1024px)/2,0rem))] bg-white rounded-lg shadow-lg min-w-[200px] p-4 ">
+          <h2>Downloading</h2>
+          <ul>
+            {downloading?.map((ep) => (
+              <li key={ep.guid} className=" flex gap-2">
+                <img src={ep.img ?? ""} alt="" width={32} height={32} />
+                <span className="x">{ep.title ?? ep.guid}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </dialog>
+
       <div className=" max-w-5xl mx-auto grid grid-cols-[auto_1fr]">
         <aside className="w-[250px] min-h-[calc(100vh-2rem)] border-r border-slate-300 space-y-2 px-2">
           <Link

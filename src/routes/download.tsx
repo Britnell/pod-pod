@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useStoreContext } from "../useStore";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/download")({
   component: Settings,
 });
 

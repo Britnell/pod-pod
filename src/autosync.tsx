@@ -3,6 +3,7 @@ import { readDir, watchImmediate } from "@tauri-apps/plugin-fs";
 import { audioDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
 import { Settings } from "./useStore";
+
 export const useAutoSync = (
   settingstate: [Settings, (s: Settings) => void],
 ) => {
