@@ -15,26 +15,35 @@ function RootLayout() {
 
   return (
     <StoreContext.Provider value={store}>
-      <header className="col-span-2 bg-slate-400 py-1 ">
-        <div className="px-6 max-w-5xl mx-auto flex items-center gap-4">
+      <header className="  ">
+        <nav className="px-6 bg-[#bd8f62]  py-1 rounded max-w-5xl mx-auto flex items-center gap-4">
           <Link to="/" className="heading">
             Pod-pod
           </Link>
-          <Link to="/" className="ml-auto">
-            home
+          <Link
+            to="/"
+            className="font-bold hover:bg-[#eed6bf] rounded-sm px-1 ml-auto"
+          >
+            Home
           </Link>
-          <Link to="/sync" className="">
-            sync
+          <Link
+            to="/sync"
+            className="font-bold hover:bg-[#eed6bf] rounded-sm px-1 "
+          >
+            Sync
           </Link>
-          <Link to="/settings" className="mr-auto">
-            settings
+          <Link
+            to="/settings"
+            className="font-bold hover:bg-[#eed6bf] rounded-sm px-1 mr-auto"
+          >
+            Settings
           </Link>
           {syncing && (
             <span className="ml-auto bg-orange-400 px-1 rounded font-medium">
               syncing…
             </span>
           )}
-        </div>
+        </nav>
       </header>
       <div className=" max-w-5xl mx-auto grid grid-cols-[auto_1fr]">
         <aside className="w-[250px] min-h-[calc(100vh-2rem)] border-r border-slate-300 space-y-2 px-2">
