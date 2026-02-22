@@ -2,6 +2,18 @@
 
 @theme {
   --font-mono: "Nimbus Mono PS", "Courier New", monospace;
+
+  --color-brown-50: #f9f7f6;
+  --color-brown-100: #f4f0eb;
+  --color-brown-200: #eadccc;
+  --color-brown-300: #e3c6a6;
+  --color-brown-400: #daac76;
+  --color-brown-500: #d29146;
+  --color-brown-600: #b9772d;
+  --color-brown-700: #956228;
+  --color-brown-800: #6b471f;
+  --color-brown-900: #4d3519;
+  --color-brown-950: #2d2010;
 }
 
 body {

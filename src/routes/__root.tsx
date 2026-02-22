@@ -16,25 +16,25 @@ function RootLayout() {
   return (
     <StoreContext.Provider value={store}>
       <header className="  ">
-        <nav className="px-6 bg-[#bd8f62]  py-1 rounded max-w-5xl mx-auto flex items-center gap-4">
+        <nav className="px-6 bg-brown-400  py-1 rounded max-w-5xl mx-auto flex items-center gap-4">
           <Link to="/" className="heading">
             Pod-pod
           </Link>
           <Link
             to="/"
-            className="font-bold hover:bg-[#eed6bf] rounded-sm px-1 ml-auto"
+            className="font-bold underline-offset-2 hover:underline rounded-sm px-1 ml-auto"
           >
             Home
           </Link>
           <Link
             to="/sync"
-            className="font-bold hover:bg-[#eed6bf] rounded-sm px-1 "
+            className="font-bold underline-offset-2 hover:underline rounded-sm px-1 "
           >
             Sync
           </Link>
           <Link
             to="/settings"
-            className="font-bold hover:bg-[#eed6bf] rounded-sm px-1 mr-auto"
+            className="font-bold underline-offset-2 hover:underline rounded-sm px-1 mr-auto"
           >
             Settings
           </Link>
