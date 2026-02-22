@@ -1,5 +1,7 @@
 import { atom, useAtom } from "jotai";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Episode } from "./usePodcastEpisodes";
 import type { Podcast, Settings } from "./useStore";
 
 export interface DownloadingEpisode {
@@ -20,6 +22,7 @@ export const useDownloader = ({
   podcaststate,
 }: UseDownloaderProps = {}) => {
   const [downloading, setDownloading] = useAtom(downloadingAtom);
+  const queryClient = useQueryClient();
 
   const settings = settingstate?.[0];
   const podcasts = podcaststate?.[0];
@@ -29,8 +32,14 @@ export const useDownloader = ({
     const count = settings?.autoDownloadCount;
     if (!count) return;
 
-    podcasts?.forEach((_pod) => {
-      // console.log(pod);
+    podcasts?.forEach((pod) => {
+      const episodes = queryClient.getQueryData<Episode[]>([
+        "episodes",
+        pod.collectionName,
+      ]);
+      const list = episodes?.slice(0, count);
+      console.log(pod, list);
+      // use episodes...
     });
   }, [settings, podcasts]);
 
