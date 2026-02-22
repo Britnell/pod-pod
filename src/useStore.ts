@@ -14,11 +14,15 @@ export interface Podcast {
 export interface Settings {
   devicePath: string | null;
   autoSync: boolean;
+  autoDownload: boolean;
+  autoDownloadCount: number;
 }
 
 const defaultSettings: Settings = {
   devicePath: null,
   autoSync: false,
+  autoDownload: false,
+  autoDownloadCount: 3,
 };
 
 interface StoreState {

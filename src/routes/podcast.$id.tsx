@@ -61,38 +61,52 @@ function PodcastDetail() {
   if (isLoading) {
     return <p>Loading...</p>;
   }
+  // console.log(podcast);
 
   return (
-    <div className="px-4">
+    <div className="p-4">
       <div className="grid grid-cols-[auto_1fr] gap-2">
         <img
-          src={podcast.artworkUrl600 ?? podcast.artworkUrl100}
+          src={podcast.artworkUrl100}
           alt={podcast.collectionName}
           className="w-20 float-left"
         />
-        <h1 className="text-3xl font-bold">{podcast.collectionName}</h1>
+        <div className="x">
+          <h1 className="text-3xl font-bold">{podcast.collectionName}</h1>
+          <p className=" text-slate-500">{podcast.trackCount} episodes</p>
+        </div>
       </div>
       <ul>
         {episodes.slice(0, 10).map((ep) => {
           const [a, b, c] =
             ep.duration?.split(":").map((str) => parseInt(str)) ?? [];
-          const h = c ? a : 0;
-          const m = c ? b : a;
+          let h = 0,
+            m = 0;
+          if (!b && !c) {
+            h = Math.floor(a / 3600);
+            m = Math.floor(a / 60) % 60;
+          } else {
+            h = c ? a : 0;
+            m = c ? b : a;
+          }
 
           const downloaded = savedFiles?.includes(episodeFilename(ep));
           const isDownloading = downloading.includes(ep.guid!);
+
+          const date = ep.pubDate?.split(" ").slice(0, 4).join(" ");
+
           return (
             <li
               key={ep.guid}
-              className="my-4 w-full relative p-2 border border-slate-200 grid grid-cols-[1fr_auto] "
+              className="my-4 w-full relative p-2 border border-slate-200 grid grid-cols-[auto_1fr_auto] gap-2 "
             >
+              <img alt="..." src={ep.img} className=" w-14" />
               <div className="x">
                 <h2 className="text-lg font-medium">{ep.title}</h2>
-                <p className="text-sm text-slate-500"> {ep.pubDate}</p>
-                <p className=" bg-slate-200"> </p>
-                <p className="max-w-[60vw] text-sm text-ellipsis text-nowrap  overflow-hidden w-full flex gap-2">
-                  {!!h && <span className="">{h} h</span>}
-                  {!!m && <span className="">{m} m</span>}
+                <p className="text-sm text-slate-500"> {date}</p>
+                <p className="max-w-[60vw]  text-ellipsis text-nowrap  overflow-hidden inline-flex  gap-2 bg-slate-100 px-1 rounded">
+                  {!!h && <span className="">{h} hr</span>}
+                  {!!m && <span className="">{m} min</span>}
                 </p>
               </div>
               <div className="x">
@@ -155,15 +169,22 @@ async function fetchEpisodes(feedUrl: string): Promise<Episode[]> {
   const xml = await res.text();
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   return Array.from(doc.querySelectorAll("item")).map((item) => {
+    // parse
     const pubDate = item.querySelector("pubDate")?.textContent;
-    const duration =
-      item.getElementsByTagName("itunes:duration")[0]?.textContent;
-    const description =
-      item.getElementsByTagName("itunes:summary")[0]?.textContent;
     const guid = item.querySelector("guid")?.textContent;
     const title = item.querySelector("title")?.textContent;
     const audioUrl =
       item.querySelector("enclosure")?.getAttribute("url") ?? undefined;
-    return { title, guid, pubDate, duration, description, audioUrl };
+    const duration =
+      item.getElementsByTagName("itunes:duration")[0]?.textContent;
+    const description =
+      item.getElementsByTagName("itunes:summary")[0]?.textContent;
+
+    // const img = item.getElementsByTagName("media:thumbnail")[0].getAttribute("url");
+    const img = item
+      .getElementsByTagName("itunes:image")[0]
+      .getAttribute("href");
+
+    return { title, guid, pubDate, duration, description, audioUrl, img };
   });
 }
