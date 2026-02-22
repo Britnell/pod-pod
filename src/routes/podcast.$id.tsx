@@ -20,6 +20,8 @@ function PodcastDetail() {
   const [podcasts] = podcaststate;
   const podcast = podcasts.find((p) => p.collectionId === Number(id));
   const [downloading, setDownloading] = React.useState<string[]>([]);
+  const PAGE_SIZE = 10;
+  const [results, setResults] = React.useState(PAGE_SIZE);
 
   const { data: episodes = [], isLoading } = useQuery({
     queryKey: ["episodes", id],
@@ -78,7 +80,7 @@ function PodcastDetail() {
         </div>
       </div>
       <ul>
-        {episodes.slice(0, 10).map((ep) => {
+        {episodes.slice(0, results).map((ep) => {
           const [a, b, c] =
             ep.duration?.split(":").map((str) => parseInt(str)) ?? [];
           let h = 0,
@@ -151,6 +153,14 @@ function PodcastDetail() {
           );
         })}
       </ul>
+      {results < episodes.length && (
+        <button
+          onClick={() => setResults((c) => c + PAGE_SIZE)}
+          className="w-full py-2 text-sm text-slate-500 border border-slate-200 rounded-sm"
+        >
+          Load more
+        </button>
+      )}
     </div>
   );
 }
