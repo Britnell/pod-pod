@@ -13,7 +13,7 @@ function RootLayout() {
   const [podcasts] = podcaststate;
 
   const { syncing } = useAutoSync(settingstate);
-  const { downloading } = useDownloader();
+  const { downloading } = useDownloader({ settingstate, podcaststate });
 
   return (
     <StoreContext.Provider value={store}>
