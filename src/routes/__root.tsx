@@ -22,9 +22,10 @@ function RootLayout() {
           <Link to="/" className="heading">
             Pod-pod
           </Link>
+
           <Link
             to="/"
-            className="font-bold underline-offset-2 hover:underline rounded-sm px-1 ml-auto"
+            className="font-bold underline-offset-2 hover:underline rounded-sm px-1 ml-auto pl-20"
           >
             Home
           </Link>
@@ -40,19 +41,19 @@ function RootLayout() {
           >
             Download
           </Link>
-          {syncing && (
-            <span className="ml-auto bg-orange-400 px-1 rounded font-medium">
-              syncing…
-            </span>
-          )}
-          {!!downloading?.length && (
-            <Link
-              to="/download"
-              className="ml-auto border rounded px-2 py-0.5 text-sm hover:bg-slate-100"
-            >
-              ↓ {downloading.length}
-            </Link>
-          )}
+
+          <span
+            className={` bg-orange-400 px-1 text-sm rounded font-medium ${syncing ? "" : " invisible"}`}
+          >
+            syncing…
+          </span>
+
+          <Link
+            to="/download"
+            className={` border rounded px-2 py-0.5 text-sm hover:bg-slate-100 ${downloading?.length ? "" : " invisible"}`}
+          >
+            downloading
+          </Link>
         </nav>
       </header>
 
