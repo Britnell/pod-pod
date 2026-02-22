@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-http": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-store": "~2",
+    "jotai": "^2.18.0",
     "preact": "^10.25.1",
     "tailwindcss": "^4.2.0"
   },

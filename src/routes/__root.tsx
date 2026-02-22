@@ -1,6 +1,7 @@
 import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
 import { useStore, StoreContext } from "../useStore";
 import { useAutoSync } from "../autosync";
+import { useDownloader } from "../useDownloader";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -12,6 +13,7 @@ function RootLayout() {
   const [podcasts] = podcaststate;
 
   const { syncing } = useAutoSync(settingstate);
+  const { downloading } = useDownloader();
 
   return (
     <StoreContext.Provider value={store}>
@@ -43,6 +45,9 @@ function RootLayout() {
               syncing…
             </span>
           )}
+          <span className={!!downloading?.length ? "" : " invisible"}>
+            [{downloading?.length}]
+          </span>
         </nav>
       </header>
       <div className=" max-w-5xl mx-auto grid grid-cols-[auto_1fr]">
@@ -71,7 +76,7 @@ function RootLayout() {
           ))}
         </aside>
         <main>
-          <Outlet />
+          <Outlet test={123} />
         </main>
       </div>
     </StoreContext.Provider>

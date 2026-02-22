@@ -9,19 +9,23 @@ import {
   readDir,
 } from "@tauri-apps/plugin-fs";
 import { useStoreContext } from "../useStore";
+import { useDownloader } from "../useDownloader";
+import { type DownloadingEpisode } from "../atoms";
 
 export const Route = createFileRoute("/podcast/$id")({
   component: PodcastDetail,
 });
 
+const PAGE_SIZE = 10;
+
 function PodcastDetail() {
   const { id } = Route.useParams();
   const { podcaststate } = useStoreContext();
+  const [results, setResults] = React.useState(PAGE_SIZE);
+  const { downloading, setDownloading } = useDownloader();
+
   const [podcasts] = podcaststate;
   const podcast = podcasts.find((p) => p.collectionId === Number(id));
-  const [downloading, setDownloading] = React.useState<string[]>([]);
-  const PAGE_SIZE = 10;
-  const [results, setResults] = React.useState(PAGE_SIZE);
 
   const { data: episodes = [], isLoading } = useQuery({
     queryKey: ["episodes", id],
@@ -50,10 +54,10 @@ function PodcastDetail() {
     podcast: { collectionName?: string | null },
     ep: Episode,
   ) => {
-    const guid = ep.guid!;
-    setDownloading((prev) => [...prev, guid]);
+    const entry: DownloadingEpisode = { guid: ep.guid!, title: ep.title, img: ep.img };
+    setDownloading((prev) => [...prev, entry]);
     downloadEpisode(podcast, ep).finally(() => {
-      setDownloading((prev) => prev.filter((id) => id !== guid));
+      setDownloading((prev) => prev.filter((e) => e.guid !== entry.guid));
       refetchSavedFiles();
     });
   };
@@ -94,12 +98,11 @@ function PodcastDetail() {
           }
 
           const downloaded = savedFiles?.includes(episodeFilename(ep));
-          const isDownloading = downloading.includes(ep.guid!);
+          const isDownloading = downloading.some((e) => e.guid === ep.guid!);
 
           const img = ep.img || podcast.artworkUrl100;
           const date = ep.date?.split(" ").slice(0, 4).join(" ");
 
-          console.log(ep.description);
           return (
             <li
               key={ep.guid}
