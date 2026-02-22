@@ -25,6 +25,7 @@ function PodcastDetail() {
     queryKey: ["episodes", id],
     queryFn: () => fetchEpisodes(podcast?.feedUrl!),
     enabled: !!podcast,
+    retry: false,
   });
 
   const { data: savedFiles, refetch: refetchSavedFiles } = useQuery({
@@ -93,37 +94,58 @@ function PodcastDetail() {
           const downloaded = savedFiles?.includes(episodeFilename(ep));
           const isDownloading = downloading.includes(ep.guid!);
 
-          const date = ep.pubDate?.split(" ").slice(0, 4).join(" ");
+          const img = ep.img || podcast.artworkUrl100;
+          const date = ep.date?.split(" ").slice(0, 4).join(" ");
 
+          console.log(ep.description);
           return (
             <li
               key={ep.guid}
-              className="my-4 w-full relative p-2 border border-slate-200 grid grid-cols-[auto_1fr_auto] gap-2 "
+              className="my-4 w-full relative p-2 border border-slate-200 grid grid-cols-[auto_1fr_auto] gap-2 rounded-sm "
             >
-              <img alt="..." src={ep.img} className=" w-14" />
+              <img
+                className=" w-12 rounded-sm"
+                src={img}
+                alt="podcast cover img"
+              />
               <div className="x">
-                <h2 className="text-lg font-medium">{ep.title}</h2>
-                <p className="text-sm text-slate-500"> {date}</p>
-                <p className="max-w-[60vw]  text-ellipsis text-nowrap  overflow-hidden inline-flex  gap-2 bg-slate-100 px-1 rounded">
-                  {!!h && <span className="">{h} hr</span>}
-                  {!!m && <span className="">{m} min</span>}
-                </p>
-              </div>
-              <div className="x">
-                {downloaded ? (
-                  <button className="text-xs px-1 bg-orange-200">saved</button>
-                ) : isDownloading ? (
-                  <span className="text-xs px-1 text-slate-400">
-                    downloading…
+                <div className="flex justify-between">
+                  <h2 className="text-lg font-medium">{ep.title}</h2>
+                  <div className="x">
+                    {downloaded ? (
+                      <span className="text-xs px-1 bg-orange-200">saved</span>
+                    ) : isDownloading ? (
+                      <span className="text-xs px-1 text-slate-400">
+                        downloading…
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => download(podcast, ep)}
+                        className="text-xs px-1 bg-blue-200"
+                      >
+                        Download
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm  flex gap-3 ">
+                  <span className="max-w-[60vw]  text-ellipsis text-nowrap  overflow-hidden inline-flex  gap-2 bg-slate-100 px-1 rounded">
+                    {!!h && `${h} hr`}
+                    {!!m && `${m} min`}
                   </span>
-                ) : (
-                  <button
-                    onClick={() => download(podcast, ep)}
-                    className="text-xs px-1 bg-blue-200"
-                  >
-                    Download
-                  </button>
-                )}
+                  {ep.season && (
+                    <span className="text-sm">season {ep.season}</span>
+                  )}
+                  {ep.episode && (
+                    <span className="text-sm">episode {ep.episode}</span>
+                  )}
+                  <span className="ml-auto text-slate-400">{date}</span>
+                </p>
+
+                <p
+                  className="x text-sm line-clamp-2 opacity-75"
+                  dangerouslySetInnerHTML={{ __html: ep.description }}
+                ></p>
               </div>
             </li>
           );
@@ -136,10 +158,13 @@ function PodcastDetail() {
 interface Episode {
   title: string | null | undefined;
   guid: string | null | undefined;
-  pubDate: string | null | undefined;
+  date: string | null | undefined;
   duration: string | null | undefined;
   description: string | null | undefined;
   audioUrl: string | null | undefined;
+  img: string | null | undefined;
+  episode: string | null | undefined;
+  season: string | null | undefined;
 }
 
 function episodeFilename(episode: Episode): string {
@@ -170,8 +195,9 @@ async function fetchEpisodes(feedUrl: string): Promise<Episode[]> {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   return Array.from(doc.querySelectorAll("item")).map((item) => {
     // parse
-    const pubDate = item.querySelector("pubDate")?.textContent;
+    const date = item.querySelector("pubDate")?.textContent;
     const guid = item.querySelector("guid")?.textContent;
+    const link = item.querySelector("link")?.textContent;
     const title = item.querySelector("title")?.textContent;
     const audioUrl =
       item.querySelector("enclosure")?.getAttribute("url") ?? undefined;
@@ -179,12 +205,26 @@ async function fetchEpisodes(feedUrl: string): Promise<Episode[]> {
       item.getElementsByTagName("itunes:duration")[0]?.textContent;
     const description =
       item.getElementsByTagName("itunes:summary")[0]?.textContent;
+    const episode = item.getElementsByTagName("itunes:episode")[0]?.textContent;
+    const season = item.getElementsByTagName("itunes:season")[0]?.textContent;
 
     // const img = item.getElementsByTagName("media:thumbnail")[0].getAttribute("url");
     const img = item
       .getElementsByTagName("itunes:image")[0]
-      .getAttribute("href");
+      ?.getAttribute("href");
 
-    return { title, guid, pubDate, duration, description, audioUrl, img };
+    // console.log(item);
+    return {
+      title,
+      guid,
+      date,
+      duration,
+      description,
+      link,
+      audioUrl,
+      img,
+      episode,
+      season,
+    };
   });
 }
