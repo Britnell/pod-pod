@@ -11,6 +11,7 @@ import {
 import { useStoreContext } from "../useStore";
 import { useDownloader } from "../useDownloader";
 import { type DownloadingEpisode } from "../atoms";
+import { usePodcastEpisodes, type Episode } from "../usePodcastEpisodes";
 
 export const Route = createFileRoute("/podcast/$id")({
   component: PodcastDetail,
@@ -27,12 +28,7 @@ function PodcastDetail() {
   const [podcasts] = podcaststate;
   const podcast = podcasts.find((p) => p.collectionId === Number(id));
 
-  const { data: episodes = [], isLoading } = useQuery({
-    queryKey: ["episodes", id],
-    queryFn: () => fetchEpisodes(podcast?.feedUrl!),
-    enabled: !!podcast,
-    retry: false,
-  });
+  const { episodes, isLoading } = usePodcastEpisodes(podcast);
 
   const { data: savedFiles, refetch: refetchSavedFiles } = useQuery({
     queryKey: ["savedFiles", podcast?.collectionName],
@@ -168,18 +164,6 @@ function PodcastDetail() {
   );
 }
 
-interface Episode {
-  title: string | null | undefined;
-  guid: string | null | undefined;
-  date: string | null | undefined;
-  duration: string | null | undefined;
-  description: string | null | undefined;
-  audioUrl: string | null | undefined;
-  img: string | null | undefined;
-  episode: string | null | undefined;
-  season: string | null | undefined;
-}
-
 function episodeFilename(episode: Episode): string {
   const ext = episode.audioUrl?.split(".").pop()?.split("?")[0] ?? "mp3";
   const safe = episode.title?.replace(/[/\\:*?"<>|]/g, "_") ?? "episode";
@@ -198,46 +182,4 @@ async function downloadEpisode(
   const bytes = new Uint8Array(await response.arrayBuffer());
   await mkdir(folder, { baseDir: BaseDirectory.Audio, recursive: true });
   await writeFile(filename, bytes, { baseDir: BaseDirectory.Audio });
-}
-
-async function fetchEpisodes(feedUrl: string): Promise<Episode[]> {
-  const res = await tauriFetch(feedUrl).catch((err) => {
-    return { error: err };
-  });
-  const xml = await res.text();
-  const doc = new DOMParser().parseFromString(xml, "application/xml");
-  return Array.from(doc.querySelectorAll("item")).map((item) => {
-    // parse
-    const date = item.querySelector("pubDate")?.textContent;
-    const guid = item.querySelector("guid")?.textContent;
-    const link = item.querySelector("link")?.textContent;
-    const title = item.querySelector("title")?.textContent;
-    const audioUrl =
-      item.querySelector("enclosure")?.getAttribute("url") ?? undefined;
-    const duration =
-      item.getElementsByTagName("itunes:duration")[0]?.textContent;
-    const description =
-      item.getElementsByTagName("itunes:summary")[0]?.textContent;
-    const episode = item.getElementsByTagName("itunes:episode")[0]?.textContent;
-    const season = item.getElementsByTagName("itunes:season")[0]?.textContent;
-
-    // const img = item.getElementsByTagName("media:thumbnail")[0].getAttribute("url");
-    const img = item
-      .getElementsByTagName("itunes:image")[0]
-      ?.getAttribute("href");
-
-    // console.log(item);
-    return {
-      title,
-      guid,
-      date,
-      duration,
-      description,
-      link,
-      audioUrl,
-      img,
-      episode,
-      season,
-    };
-  });
 }

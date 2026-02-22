@@ -29,8 +29,8 @@ export const useDownloader = ({
     const count = settings?.autoDownloadCount;
     if (!count) return;
 
-    podcasts?.forEach((pod) => {
-      console.log(pod);
+    podcasts?.forEach((_pod) => {
+      // console.log(pod);
     });
   }, [settings, podcasts]);
 
