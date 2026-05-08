@@ -1,16 +1,9 @@
 import React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
-import {
-  writeFile,
-  BaseDirectory,
-  mkdir,
-  readDir,
-} from "@tauri-apps/plugin-fs";
+import { readDir, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { useStoreContext } from "../useStore";
-import { useDownloader } from "../useDownloader";
-import { type DownloadingEpisode } from "../atoms";
+import { useDownloader, episodeFilename } from "../useDownloader";
 import { usePodcastEpisodes, type Episode } from "../usePodcastEpisodes";
 
 export const Route = createFileRoute("/podcast/$id")({
@@ -30,7 +23,7 @@ function PodcastDetail() {
 
   const { episodes, isLoading, refetch } = usePodcastEpisodes(podcast);
 
-  const { data: savedFiles, refetch: refetchSavedFiles } = useQuery({
+  const { data: savedFiles } = useQuery({
     queryKey: ["savedFiles", podcast?.collectionName],
     queryFn: () => {
       const folder = podcast?.collectionName ?? "";
@@ -38,29 +31,11 @@ function PodcastDetail() {
       return readDir(`Podcasts/${folder}`, {
         baseDir: BaseDirectory.Audio,
       })
-        .then((res) => {
-          return res.map((f) => f.name);
-        })
+        .then((res) => res.map((f) => f.name))
         .catch(() => [] as string[]);
     },
     enabled: !!podcast?.collectionName,
   });
-
-  const download = (
-    podcast: { collectionName?: string | null },
-    ep: Episode,
-  ) => {
-    const entry: DownloadingEpisode = {
-      guid: ep.guid!,
-      title: ep.title,
-      img: ep.img,
-    };
-    setDownloading((prev) => [...prev, entry]);
-    downloadEpisode(podcast, ep).finally(() => {
-      setDownloading((prev) => prev.filter((e) => e.guid !== entry.guid));
-      refetchSavedFiles();
-    });
-  };
 
   if (!podcast) {
     return <div>Podcast not found</div>;
@@ -126,7 +101,18 @@ function PodcastDetail() {
                       </span>
                     ) : (
                       <button
-                        onClick={() => download(podcast, ep)}
+                        onClick={() =>
+                          setDownloading((prev) => [
+                            ...prev,
+                            {
+                              guid: ep.guid!,
+                              title: ep.title,
+                              img: ep.img,
+                              audioUrl: ep.audioUrl!,
+                              collectionName: podcast.collectionName!,
+                            },
+                          ])
+                        }
                         className="text-xs px-1 bg-blue-200"
                       >
                         Download
@@ -167,24 +153,4 @@ function PodcastDetail() {
       )}
     </div>
   );
-}
-
-function episodeFilename(episode: Episode): string {
-  const ext = episode.audioUrl?.split(".").pop()?.split("?")[0] ?? "mp3";
-  const safe = episode.title?.replace(/[/\\:*?"<>|]/g, "_") ?? "episode";
-  return `${safe}.${ext}`;
-}
-
-async function downloadEpisode(
-  podcast: { collectionName?: string | null },
-  episode: Episode,
-) {
-  const { audioUrl } = episode;
-  if (!audioUrl) return;
-  const folder = `Podcasts/${podcast.collectionName!}`;
-  const filename = `${folder}/${episodeFilename(episode)}`;
-  const response = await tauriFetch(audioUrl);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  await mkdir(folder, { baseDir: BaseDirectory.Audio, recursive: true });
-  await writeFile(filename, bytes, { baseDir: BaseDirectory.Audio });
 }
